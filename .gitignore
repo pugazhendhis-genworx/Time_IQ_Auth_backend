@@ -1,0 +1,31 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+*.pyd
+*.so
+*.dylib
+build/
+dist/
+wheels/
+*.egg-info
+pip-wheel-metadata/
+
+
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.pyre/
+.hypothesis/
+.tox/
+.nox/
+
+# Virtual environments
+.venv
+.venv/
+venv/
+ENV/
+env/
+.env
+.env.*
+
+

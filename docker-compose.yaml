@@ -1,0 +1,37 @@
+services:
+
+  db:
+    image: postgres:16-alpine
+    container_name: auth_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: TimeIQ
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  backend:
+    build: ./
+    container_name: Time_IQ_AUTH_SERVICE
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    restart: always
+
+  frontend:
+    build: E:\TimeIQ-Front-end
+    container_name: auth_frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+    restart: always
+
+volumes:
+  postgres_data:
