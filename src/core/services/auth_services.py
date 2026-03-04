@@ -84,6 +84,7 @@ async def login_service(db, request, response, username, password):
             "message": "Login successful",
             "access_token": access_token,
             "refresh_token": refresh_token,
+            "token_type": "bearer",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

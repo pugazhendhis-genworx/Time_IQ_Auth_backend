@@ -83,3 +83,8 @@ async def forgot_password_verify(
         data.otp,
         data.new_password,
     )
+
+
+@auth_router.get("/validate")
+async def get_user_credentials():
+    pass

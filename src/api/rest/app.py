@@ -6,13 +6,16 @@ from fastapi.middleware.cors import CORSMiddleware
 import src.data.models.postgres  # noqa: F401
 from src.api.rest.routes.Auth_routes import auth_router
 from src.api.rest.routes.health_router import health_router
-from src.data.clients.postgres_client import Base, engine
+from src.data.clients.postgres_client import Base, async_session_maker, engine
+from src.utils.role_seed import seed_roles
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    async with async_session_maker() as session:
+        await seed_roles(session)
     yield
     await engine.dispose()
 

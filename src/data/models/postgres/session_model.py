@@ -13,7 +13,7 @@ class Session(Base):
     user_id = Column(String(50), ForeignKey("users.user_id", ondelete="CASCADE"))
     jti = Column(String(255))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    expires_at = expires_at = Column(DateTime(timezone=True), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
     ip_address = Column(String(255))
     user_agent = Column(String(500))
     is_revoked = Column(Boolean, default=False)
