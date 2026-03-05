@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from src.core.services.jwt_service import (
     create_access_token,
     create_refresh_token,
+    decode_access_token,
     decode_refresh_token,
 )
 from src.data.models.postgres.session_model import Session
@@ -20,6 +21,7 @@ from src.data.repositories.session_repository import (
 from src.data.repositories.user_repository import (
     create_user,
     get_user_by_email,
+    get_user_by_id,
     update_user_password_by_email,
 )
 from src.utils.otp_store import set_otp, verify_otp
@@ -221,3 +223,29 @@ async def forgot_password_verify_service(
     await update_user_password_by_email(db, email, new_password)
 
     return {"message": "Password updated successfully"}
+
+
+async def validate_user_service(db, request):
+    auth_header = request.headers.get("authorization")
+
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Missing or invalid authorization header",
+        )
+
+    token = auth_header.split(" ")[1]
+    payload = decode_access_token(token)
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    user = await get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {
+        "user_id": user.user_id,
+        "role": user.role.name if user.role else None,
+    }

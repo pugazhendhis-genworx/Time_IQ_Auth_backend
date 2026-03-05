@@ -58,4 +58,8 @@ class ForgotPasswordVerify(BaseModel):
 
 class RevokedToken(BaseModel):
     id: str
-    jti: str
+
+
+class ValidateResponse(BaseModel):
+    user_id: str
+    role: str | None = None

@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TimeIQ Admin Dashboard</title>
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --danger: #ef4444;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── Login Screen ── */
+  #login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .login-card { background:var(--card); padding:2.5rem; border-radius:var(--radius); box-shadow:var(--shadow); width:100%; max-width:400px; }
+  .login-card h1 { font-size:1.5rem; margin-bottom:.25rem; }
+  .login-card p.sub { color:var(--muted); font-size:.875rem; margin-bottom:1.5rem; }
+  .login-card .field { margin-bottom:1rem; }
+  .login-card label { display:block; font-size:.8rem; font-weight:600; margin-bottom:.25rem; color:var(--muted); }
+  .login-card input { width:100%; padding:.6rem .75rem; border:1px solid var(--border); border-radius:6px; font-size:.9rem; }
+  .login-card input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(79,70,229,.15); }
+  .login-card button { width:100%; padding:.7rem; background:var(--primary); color:#fff; border:none; border-radius:6px; font-size:.95rem; font-weight:600; cursor:pointer; margin-top:.5rem; }
+  .login-card button:hover { background:var(--primary-hover); }
+  .login-card .error-msg { color:var(--danger); font-size:.8rem; margin-top:.5rem; display:none; }
+
+  /* ── Dashboard Shell ── */
+  #app-shell { display:none; min-height:100vh; }
+  .topbar { background:var(--card); border-bottom:1px solid var(--border); padding:.75rem 1.5rem; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+  .topbar h2 { font-size:1.1rem; color:var(--primary); }
+  .topbar .right { display:flex; align-items:center; gap:1rem; }
+  .topbar .user-pill { background:var(--bg); padding:.35rem .85rem; border-radius:20px; font-size:.8rem; font-weight:600; }
+  .topbar .logout-btn { background:none; border:1px solid var(--danger); color:var(--danger); padding:.35rem .85rem; border-radius:6px; font-size:.8rem; cursor:pointer; font-weight:600; }
+  .topbar .logout-btn:hover { background:var(--danger); color:#fff; }
+
+  .layout { display:flex; flex:1; }
+  .sidebar { width:220px; background:var(--card); border-right:1px solid var(--border); padding:1rem 0; flex-shrink:0; min-height:calc(100vh - 53px); }
+  .sidebar a { display:flex; align-items:center; gap:.6rem; padding:.65rem 1.25rem; font-size:.875rem; color:var(--text); text-decoration:none; cursor:pointer; transition:background .15s; }
+  .sidebar a:hover, .sidebar a.active { background:rgba(79,70,229,.08); color:var(--primary); font-weight:600; }
+  .sidebar a .icon { width:18px; text-align:center; }
+
+  .main { flex:1; padding:1.5rem 2rem; overflow-y:auto; }
+
+  /* ── Pages ── */
+  .page { display:none; }
+  .page.active { display:block; }
+
+  .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; }
+  .page-header h3 { font-size:1.2rem; }
+
+  /* ── Cards / Stats ── */
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+  .stat-card { background:var(--card); padding:1.25rem; border-radius:var(--radius); box-shadow:var(--shadow); }
+  .stat-card .label { font-size:.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+  .stat-card .value { font-size:1.6rem; font-weight:700; margin-top:.25rem; }
+
+  /* ── Table ── */
+  .table-wrap { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+  .table-toolbar { padding:.75rem 1rem; display:flex; align-items:center; gap:.75rem; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .table-toolbar input, .table-toolbar select { padding:.45rem .65rem; border:1px solid var(--border); border-radius:6px; font-size:.85rem; }
+  .table-toolbar input { flex:1; min-width:180px; }
+  table { width:100%; border-collapse:collapse; font-size:.875rem; }
+  thead { background:var(--bg); }
+  th, td { text-align:left; padding:.7rem 1rem; border-bottom:1px solid var(--border); }
+  th { font-weight:600; font-size:.75rem; text-transform:uppercase; letter-spacing:.4px; color:var(--muted); }
+  tr:hover { background:rgba(79,70,229,.03); }
+  .badge { display:inline-block; padding:.15rem .55rem; border-radius:12px; font-size:.72rem; font-weight:600; text-transform:capitalize; }
+  .badge-admin { background:#ede9fe; color:#6d28d9; }
+  .badge-operation_executive { background:#fef3c7; color:#92400e; }
+  .badge-auditor { background:#dbeafe; color:#1e40af; }
+  .badge-active { background:#dcfce7; color:#166534; }
+  .badge-inactive { background:#fee2e2; color:#991b1b; }
+  .no-data { text-align:center; padding:2rem; color:var(--muted); }
+
+  /* ── Modal ── */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:center; justify-content:center; z-index:100; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--card); border-radius:var(--radius); padding:2rem; width:100%; max-width:480px; box-shadow:0 20px 60px rgba(0,0,0,.15); }
+  .modal h3 { margin-bottom:1.25rem; }
+  .modal .field { margin-bottom:1rem; }
+  .modal label { display:block; font-size:.8rem; font-weight:600; margin-bottom:.25rem; color:var(--muted); }
+  .modal input, .modal select { width:100%; padding:.55rem .75rem; border:1px solid var(--border); border-radius:6px; font-size:.9rem; }
+  .modal input:focus, .modal select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(79,70,229,.15); }
+  .modal-actions { display:flex; gap:.75rem; justify-content:flex-end; margin-top:1.5rem; }
+  .btn { padding:.55rem 1.1rem; border-radius:6px; font-size:.85rem; font-weight:600; cursor:pointer; border:none; }
+  .btn-primary { background:var(--primary); color:#fff; }
+  .btn-primary:hover { background:var(--primary-hover); }
+  .btn-ghost { background:transparent; border:1px solid var(--border); color:var(--text); }
+  .btn-ghost:hover { background:var(--bg); }
+  .btn-sm { padding:.4rem .8rem; font-size:.8rem; }
+  .form-error { color:var(--danger); font-size:.8rem; margin-top:.35rem; }
+
+  /* ── Roles grid ── */
+  .roles-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; }
+  .role-card { background:var(--card); padding:1.25rem; border-radius:var(--radius); box-shadow:var(--shadow); }
+  .role-card .role-name { font-size:1rem; font-weight:700; text-transform:capitalize; }
+  .role-card .role-id { font-size:.72rem; color:var(--muted); margin-top:.25rem; word-break:break-all; }
+  .role-card .role-users { margin-top:.5rem; font-size:.8rem; color:var(--primary); font-weight:600; }
+
+  /* ── Profile ── */
+  .profile-card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:2rem; max-width:520px; }
+  .profile-card .avatar { width:64px; height:64px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:700; margin-bottom:1rem; }
+  .profile-card .info-row { display:flex; justify-content:space-between; padding:.6rem 0; border-bottom:1px solid var(--border); font-size:.9rem; }
+  .profile-card .info-row:last-child { border:none; }
+  .profile-card .info-label { color:var(--muted); font-weight:600; font-size:.8rem; }
+
+  /* ── User Detail Modal ── */
+  .detail-row { display:flex; justify-content:space-between; padding:.55rem 0; border-bottom:1px solid var(--border); font-size:.9rem; }
+  .detail-row:last-child { border:none; }
+  .detail-label { color:var(--muted); font-size:.8rem; font-weight:600; }
+
+  /* ── Toast ── */
+  .toast-container { position:fixed; top:1rem; right:1rem; z-index:200; display:flex; flex-direction:column; gap:.5rem; }
+  .toast { padding:.7rem 1.1rem; border-radius:8px; font-size:.85rem; font-weight:500; color:#fff; animation:slideIn .25s ease; box-shadow:0 4px 12px rgba(0,0,0,.15); }
+  .toast-success { background:var(--success); }
+  .toast-error { background:var(--danger); }
+  @keyframes slideIn { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }
+
+  /* Responsive */
+  @media(max-width:768px) {
+    .sidebar { display:none; }
+    .main { padding:1rem; }
+    .table-toolbar { flex-direction:column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ════════ LOGIN SCREEN ════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>TimeIQ Admin</h1>
+    <p class="sub">Sign in to your admin dashboard</p>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="admin@example.com" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" />
+    </div>
+    <div class="error-msg" id="loginError"></div>
+    <button id="loginBtn" onclick="handleLogin()">Sign In</button>
+  </div>
+</div>
+
+<!-- ════════ APP SHELL ════════ -->
+<div id="app-shell">
+  <!-- Top bar -->
+  <div class="topbar">
+    <h2>TimeIQ Admin</h2>
+    <div class="right">
+      <span class="user-pill" id="topbarUser"></span>
+      <button class="logout-btn" onclick="handleLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <a class="active" data-page="dashboard" onclick="navigate('dashboard')"><span class="icon">&#9632;</span> Dashboard</a>
+      <a data-page="users" onclick="navigate('users')"><span class="icon">&#9787;</span> Users</a>
+      <a data-page="roles" onclick="navigate('roles')"><span class="icon">&#9881;</span> Roles</a>
+      <a data-page="profile" onclick="navigate('profile')"><span class="icon">&#9786;</span> Profile</a>
+    </nav>
+
+    <!-- Main content -->
+    <div class="main">
+
+      <!-- ── Dashboard page ── -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header"><h3>Dashboard</h3></div>
+        <div class="stats">
+          <div class="stat-card"><div class="label">Total Users</div><div class="value" id="statUsers">-</div></div>
+          <div class="stat-card"><div class="label">Active Users</div><div class="value" id="statActive">-</div></div>
+          <div class="stat-card"><div class="label">Roles</div><div class="value" id="statRoles">-</div></div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-toolbar"><strong style="font-size:.85rem;">Recent Users</strong></div>
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
+            <tbody id="dashRecentBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Users page ── -->
+      <div class="page" id="page-users">
+        <div class="page-header">
+          <h3>User Management</h3>
+          <button class="btn btn-primary btn-sm" onclick="openAddUserModal()">+ Add User</button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <input type="text" id="userSearch" placeholder="Search by name or email..." oninput="renderUsersTable()" />
+            <select id="filterRole" onchange="renderUsersTable()"><option value="">All Roles</option></select>
+            <select id="filterStatus" onchange="renderUsersTable()">
+              <option value="">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
+          <table>
+            <thead><tr><th>User ID</th><th>Name</th><th>Email</th><th>Contact</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="usersBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Roles page ── -->
+      <div class="page" id="page-roles">
+        <div class="page-header"><h3>Roles</h3></div>
+        <div class="roles-grid" id="rolesGrid"></div>
+      </div>
+
+      <!-- ── Profile page ── -->
+      <div class="page" id="page-profile">
+        <div class="page-header"><h3>Profile Settings</h3></div>
+        <div class="profile-card" id="profileCard"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ ADD USER MODAL ════════ -->
+<div class="modal-overlay" id="addUserModal">
+  <div class="modal">
+    <h3>Add New User</h3>
+    <div class="field">
+      <label>Full Name</label>
+      <input type="text" id="newName" placeholder="John Doe" />
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="newEmail" placeholder="john@example.com" />
+    </div>
+    <div class="field">
+      <label>Contact Number</label>
+      <input type="text" id="newContact" placeholder="+1 234 567 890" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="newPassword" placeholder="••••••••" />
+    </div>
+    <div class="field">
+      <label>Role</label>
+      <select id="newRole"></select>
+    </div>
+    <div class="form-error" id="addUserError" style="display:none;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAddUserModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="handleAddUser()">Create User</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ VIEW USER MODAL ════════ -->
+<div class="modal-overlay" id="viewUserModal">
+  <div class="modal">
+    <h3>User Details</h3>
+    <div id="viewUserBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeViewUserModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════
+   State
+   ══════════════════════════════════════ */
+let accessToken = localStorage.getItem('access_token') || '';
+let allUsers = [];
+let allRoles = [];
+let currentUser = null;
+
+/* ══════════════════════════════════════
+   Helpers
+   ══════════════════════════════════════ */
+function api(url, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (accessToken) headers['Authorization'] = 'Bearer ' + accessToken;
+  return fetch(url, { ...opts, headers, credentials: 'include' });
+}
+
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + type;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function badgeClass(role) {
+  if (!role) return 'badge';
+  return 'badge badge-' + role.toLowerCase().replace(/\s+/g, '_');
+}
+
+/* ══════════════════════════════════════
+   Auth
+   ══════════════════════════════════════ */
+async function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+
+  if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; errEl.style.display = 'block'; return; }
+
+  const body = new URLSearchParams();
+  body.append('username', email);
+  body.append('password', password);
+
+  try {
+    const res = await fetch('/auth/login', { method: 'POST', body, credentials: 'include' });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.detail || 'Login failed'; errEl.style.display = 'block'; return; }
+    accessToken = data.access_token;
+    localStorage.setItem('access_token', accessToken);
+    await bootstrap();
+  } catch (e) {
+    errEl.textContent = 'Network error'; errEl.style.display = 'block';
+  }
+}
+
+async function handleLogout() {
+  try { await api('/auth/logout', { method: 'POST' }); } catch (_) {}
+  accessToken = '';
+  localStorage.removeItem('access_token');
+  currentUser = null;
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+/* ══════════════════════════════════════
+   Bootstrap (after login / page load)
+   ══════════════════════════════════════ */
+async function bootstrap() {
+  try {
+    const vRes = await api('/auth/validate');
+    if (!vRes.ok) throw new Error('invalid');
+    currentUser = await vRes.json();
+  } catch {
+    accessToken = '';
+    localStorage.removeItem('access_token');
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-shell').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'flex';
+  document.getElementById('topbarUser').textContent = currentUser.role ? currentUser.role.toUpperCase() + ' — ' + currentUser.user_id : currentUser.user_id;
+
+  await Promise.all([loadUsers(), loadRoles()]);
+  renderDashboard();
+  renderProfile();
+}
+
+/* ══════════════════════════════════════
+   Data loaders
+   ══════════════════════════════════════ */
+async function loadUsers() {
+  try {
+    const res = await api('/users/');
+    if (res.ok) allUsers = await res.json();
+  } catch (_) { allUsers = []; }
+}
+
+async function loadRoles() {
+  try {
+    const res = await api('/users/roles');
+    if (res.ok) allRoles = await res.json();
+  } catch (_) { allRoles = []; }
+  populateRoleFilters();
+}
+
+/* ══════════════════════════════════════
+   Navigation
+   ══════════════════════════════════════ */
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.sidebar a').forEach(a => a.classList.toggle('active', a.dataset.page === page));
+
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'users') renderUsersTable();
+  if (page === 'roles') renderRoles();
+  if (page === 'profile') renderProfile();
+}
+
+/* ══════════════════════════════════════
+   Dashboard
+   ══════════════════════════════════════ */
+function renderDashboard() {
+  document.getElementById('statUsers').textContent = allUsers.length;
+  document.getElementById('statActive').textContent = allUsers.filter(u => u.status === 'ACTIVE').length;
+  document.getElementById('statRoles').textContent = allRoles.length;
+
+  const recent = [...allUsers].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
+  const body = document.getElementById('dashRecentBody');
+  if (!recent.length) { body.innerHTML = '<tr><td colspan="4" class="no-data">No users yet</td></tr>'; return; }
+  body.innerHTML = recent.map(u => `
+    <tr>
+      <td>${esc(u.name)}</td>
+      <td>${esc(u.email)}</td>
+      <td><span class="${badgeClass(u.role)} badge">${esc(u.role || '—')}</span></td>
+      <td><span class="badge badge-${(u.status||'').toLowerCase()}">${esc(u.status)}</span></td>
+    </tr>
+  `).join('');
+}
+
+/* ══════════════════════════════════════
+   Users Table
+   ══════════════════════════════════════ */
+function populateRoleFilters() {
+  const sel = document.getElementById('filterRole');
+  const addSel = document.getElementById('newRole');
+  sel.innerHTML = '<option value="">All Roles</option>' + allRoles.map(r => `<option value="${esc(r.name)}">${esc(r.name)}</option>`).join('');
+  addSel.innerHTML = allRoles.map(r => `<option value="${esc(r.name)}">${esc(r.name)}</option>`).join('');
+}
+
+function renderUsersTable() {
+  const search = document.getElementById('userSearch').value.toLowerCase();
+  const roleFilter = document.getElementById('filterRole').value;
+  const statusFilter = document.getElementById('filterStatus').value;
+
+  let filtered = allUsers;
+  if (search) filtered = filtered.filter(u => (u.name||'').toLowerCase().includes(search) || (u.email||'').toLowerCase().includes(search));
+  if (roleFilter) filtered = filtered.filter(u => u.role === roleFilter);
+  if (statusFilter) filtered = filtered.filter(u => u.status === statusFilter);
+
+  const body = document.getElementById('usersBody');
+  if (!filtered.length) { body.innerHTML = '<tr><td colspan="7" class="no-data">No users match your filters</td></tr>'; return; }
+  body.innerHTML = filtered.map(u => `
+    <tr>
+      <td style="font-size:.78rem;color:var(--muted)">${esc(u.user_id)}</td>
+      <td>${esc(u.name)}</td>
+      <td>${esc(u.email)}</td>
+      <td>${esc(u.contact_no || '—')}</td>
+      <td><span class="${badgeClass(u.role)} badge">${esc(u.role || '—')}</span></td>
+      <td><span class="badge badge-${(u.status||'').toLowerCase()}">${esc(u.status)}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="viewUser('${esc(u.user_id)}')">View</button></td>
+    </tr>
+  `).join('');
+}
+
+/* ══════════════════════════════════════
+   Add User Modal
+   ══════════════════════════════════════ */
+function openAddUserModal() {
+  document.getElementById('addUserError').style.display = 'none';
+  ['newName','newEmail','newContact','newPassword'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('addUserModal').classList.add('open');
+}
+function closeAddUserModal() { document.getElementById('addUserModal').classList.remove('open'); }
+
+async function handleAddUser() {
+  const name = document.getElementById('newName').value.trim();
+  const email = document.getElementById('newEmail').value.trim();
+  const contact_no = document.getElementById('newContact').value.trim();
+  const password = document.getElementById('newPassword').value;
+  const role_name = document.getElementById('newRole').value;
+  const errEl = document.getElementById('addUserError');
+  errEl.style.display = 'none';
+
+  if (!name || !email || !password || !role_name) { errEl.textContent = 'All fields are required.'; errEl.style.display = 'block'; return; }
+
+  try {
+    const res = await api('/users/', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, contact_no, password, role_name }),
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.detail || 'Failed to create user'; errEl.style.display = 'block'; return; }
+    toast('User created successfully');
+    closeAddUserModal();
+    await loadUsers();
+    renderUsersTable();
+  } catch (e) {
+    errEl.textContent = 'Network error'; errEl.style.display = 'block';
+  }
+}
+
+/* ══════════════════════════════════════
+   View User Modal
+   ══════════════════════════════════════ */
+async function viewUser(userId) {
+  try {
+    const res = await api('/users/' + userId);
+    if (!res.ok) { toast('User not found', 'error'); return; }
+    const u = await res.json();
+    document.getElementById('viewUserBody').innerHTML = `
+      <div class="detail-row"><span class="detail-label">User ID</span><span>${esc(u.user_id)}</span></div>
+      <div class="detail-row"><span class="detail-label">Name</span><span>${esc(u.name)}</span></div>
+      <div class="detail-row"><span class="detail-label">Email</span><span>${esc(u.email)}</span></div>
+      <div class="detail-row"><span class="detail-label">Contact</span><span>${esc(u.contact_no || '—')}</span></div>
+      <div class="detail-row"><span class="detail-label">Role</span><span class="${badgeClass(u.role)} badge">${esc(u.role || '—')}</span></div>
+      <div class="detail-row"><span class="detail-label">Status</span><span class="badge badge-${(u.status||'').toLowerCase()}">${esc(u.status)}</span></div>
+      <div class="detail-row"><span class="detail-label">Created</span><span>${u.created_at ? new Date(u.created_at).toLocaleString() : '—'}</span></div>
+    `;
+    document.getElementById('viewUserModal').classList.add('open');
+  } catch { toast('Error loading user', 'error'); }
+}
+function closeViewUserModal() { document.getElementById('viewUserModal').classList.remove('open'); }
+
+/* ══════════════════════════════════════
+   Roles Page
+   ══════════════════════════════════════ */
+function renderRoles() {
+  const grid = document.getElementById('rolesGrid');
+  if (!allRoles.length) { grid.innerHTML = '<p class="no-data">No roles found</p>'; return; }
+  grid.innerHTML = allRoles.map(r => {
+    const count = allUsers.filter(u => u.role === r.name).length;
+    return `
+      <div class="role-card">
+        <div class="role-name">${esc(r.name)}</div>
+        <div class="role-id">${esc(r.role_id)}</div>
+        <div class="role-users">${count} user${count !== 1 ? 's' : ''}</div>
+      </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════
+   Profile Page
+   ══════════════════════════════════════ */
+function renderProfile() {
+  if (!currentUser) return;
+  const me = allUsers.find(u => u.user_id === currentUser.user_id) || currentUser;
+  const initials = (me.name || me.user_id || '?').substring(0, 2).toUpperCase();
+  document.getElementById('profileCard').innerHTML = `
+    <div class="avatar">${initials}</div>
+    <div class="info-row"><span class="info-label">User ID</span><span>${esc(me.user_id)}</span></div>
+    <div class="info-row"><span class="info-label">Name</span><span>${esc(me.name || '—')}</span></div>
+    <div class="info-row"><span class="info-label">Email</span><span>${esc(me.email || '—')}</span></div>
+    <div class="info-row"><span class="info-label">Contact</span><span>${esc(me.contact_no || '—')}</span></div>
+    <div class="info-row"><span class="info-label">Role</span><span class="${badgeClass(me.role)} badge">${esc(me.role || currentUser.role || '—')}</span></div>
+    <div class="info-row"><span class="info-label">Status</span><span class="badge badge-${(me.status||'active').toLowerCase()}">${esc(me.status || 'ACTIVE')}</span></div>
+    <div class="info-row"><span class="info-label">Joined</span><span>${me.created_at ? new Date(me.created_at).toLocaleDateString() : '—'}</span></div>
+  `;
+}
+
+/* ══════════════════════════════════════
+   Escape HTML
+   ══════════════════════════════════════ */
+function esc(s) {
+  if (s == null) return '';
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(String(s)));
+  return d.innerHTML;
+}
+
+/* ══════════════════════════════════════
+   Init
+   ══════════════════════════════════════ */
+if (accessToken) { bootstrap(); }
+</script>
+</body>
+</html>

@@ -9,6 +9,7 @@ from src.core.services.auth_services import (
     logout_service,
     refresh_service,
     signup_service,
+    validate_user_service,
 )
 from src.schemas.auth_schema import (
     ForgotPasswordRequest,
@@ -16,6 +17,7 @@ from src.schemas.auth_schema import (
     SignupResponse,
     SignupSchema,
     TokenResponse,
+    ValidateResponse,
 )
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -85,6 +87,6 @@ async def forgot_password_verify(
     )
 
 
-@auth_router.get("/validate")
-async def get_user_credentials():
-    pass
+@auth_router.get("/validate", response_model=ValidateResponse)
+async def get_user_credentials(request: Request, db=Depends(get_pg_db)):
+    return await validate_user_service(db, request)
