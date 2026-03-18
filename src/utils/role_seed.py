@@ -1,8 +1,9 @@
+import asyncio
 import logging
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.data.clients.postgres_client import async_session_maker
 from src.data.models.postgres.role_model import Role
 
 logger = logging.getLogger(__name__)
@@ -23,15 +24,20 @@ SEED_ROLES = [
 ]
 
 
-async def seed_roles(session: AsyncSession) -> None:
+async def seed_roles() -> None:
     """Insert default roles if they don't already exist."""
-    for role_data in SEED_ROLES:
-        existing = await session.execute(
-            select(Role).where(Role.name == role_data["name"])
-        )
-        if existing.scalar_one_or_none() is None:
-            role = Role(**role_data)
-            session.add(role)
-            await session.flush()
-    await session.commit()
-    logger.info("Role seed completed — %d roles ensured.", len(SEED_ROLES))
+    async with async_session_maker() as session:
+        for role_data in SEED_ROLES:
+            existing = await session.execute(
+                select(Role).where(Role.name == role_data["name"])
+            )
+            if existing.scalar_one_or_none() is None:
+                role = Role(**role_data)
+                session.add(role)
+                await session.flush()
+        await session.commit()
+        logger.info("Role seed completed — %d roles ensured.", len(SEED_ROLES))
+
+
+if __name__ == "__main__":
+    asyncio.run(seed_roles())

@@ -1,4 +1,3 @@
-from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -9,27 +8,16 @@ import src.data.models.postgres  # noqa: F401
 from src.api.rest.routes.Auth_routes import auth_router
 from src.api.rest.routes.health_router import health_router
 from src.api.rest.routes.user_routes import user_router
-from src.data.clients.postgres_client import Base, async_session_maker, engine
-from src.utils.role_seed import seed_roles
+from src.config.settings import settings
 
 STATIC_DIR = Path(__file__).resolve().parent.parent.parent / "static"
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    async with async_session_maker() as session:
-        await seed_roles(session)
-    yield
-    await engine.dispose()
-
-
 def create_app() -> FastAPI:
-    app = FastAPI(title="TimeIQ_AUTH", lifespan=lifespan)
+    app = FastAPI(title="TimeIQ_AUTH")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000","http://localhost:5173"],
+        allow_origins=[settings.FRONTEND_URL, settings.BACKEND_URL],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

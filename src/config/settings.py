@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_MINUTES: int
+    FRONTEND_URL: str
+    BACKEND_URL: str
 
     class Config:
         env_file = ".env"
