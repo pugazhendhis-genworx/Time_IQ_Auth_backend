@@ -1,3 +1,15 @@
+"""
+OTP Store module.
+
+This module implements an in-memory OTP (One-Time Password) store using a standard
+Python dictionary. 
+
+**Design Limitations & Notes:**
+- Reboots/restarts of the FastAPI application will completely erase all pending OTPs.
+- This approach is not suitable for horizontal scaling (multi-instance deployments) 
+  unless sticky sessions are used, because instances do not share the `otp_store` state.
+- For production multi-instance use cases, consider migrating to Redis or a database table.
+"""
 from datetime import UTC, datetime, timedelta
 
 otp_store = {}
