@@ -29,7 +29,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="TimeIQ_AUTH", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000","http://localhost:5173"],
+        allow_origins=["http://localhost:3000", "http://localhost:5173"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
