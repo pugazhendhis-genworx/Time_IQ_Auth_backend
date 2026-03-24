@@ -6,11 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
 import src.data.models.postgres  # noqa: F401
-from src.api.rest.middleware.error_handler import (
+from src.api.middleware.error_handler import (
     http_exception_handler,
     validation_exception_handler,
 )
-from src.api.rest.middleware.request_context import RequestContextMiddleware
+from src.api.middleware.request_context import RequestContextMiddleware
 from src.api.rest.routes.Auth_routes import auth_router
 from src.api.rest.routes.health_router import health_router
 from src.api.rest.routes.user_routes import user_router
